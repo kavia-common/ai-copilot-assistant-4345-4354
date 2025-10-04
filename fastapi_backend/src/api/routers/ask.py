@@ -1,66 +1,55 @@
-from fastapi import APIRouter
+import logging
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
 from fastapi.responses import JSONResponse
-import httpx
-from ..pydantic_models import AskRequest, AskResponse
-from . import openai_client
 
-router = APIRouter(prefix="/api", tags=["qa"])
+logger = logging.getLogger(__name__)
+router = APIRouter()
 
-# PUBLIC_INTERFACE
-@router.get(
-    "/health",
-    summary="Health check",
-    description="Simple health endpoint to verify the API is running.",
-    responses={200: {"description": "Service healthy"}})
-async def health():
-    """Return service health status as JSON with HTTP 200."""
-    return {"status": "ok"}
+class AskRequest(BaseModel):
+    question: str = Field(..., description="The user's question to be answered by the AI.")
+
+class AskResponse(BaseModel):
+    answer: str = Field(..., description="The AI-generated answer for the given question.")
+    model: Optional[str] = Field(None, description="The model used to generate the answer, if available.")
 
 # PUBLIC_INTERFACE
 @router.post(
-    "/ask",
+    "/api/ask",
     response_model=AskResponse,
+    tags=["qa"],
     summary="Ask a question",
     description="Send a question to the AI model and get a generated answer.",
-    responses={
-        200: {"description": "Answer successfully generated."},
-        400: {"description": "Bad request or missing configuration."},
-        502: {"description": "Upstream AI provider error."},
-        500: {"description": "Internal server error."},
-    },
 )
-async def ask(request: AskRequest):
+def ask(req: AskRequest):
     """
-    Accept a question and return an AI-generated answer.
-
-    Returns:
-        AskResponse JSON on success. JSON error with 'message' on failures.
+    Handle the /api/ask endpoint.
+    - Logs incoming request prompt length/snippet.
+    - Returns a static answer as placeholder (adjust to real OpenAI integration elsewhere).
+    - Logs and returns structured errors when exceptions occur.
     """
     try:
-        answer, model = await openai_client.get_answer(request.question)
-        return AskResponse(answer=answer, model=model)
-    except ValueError as e:
-        # Typically missing OPENAI_API_KEY or invalid configuration
-        return JSONResponse(
-            status_code=400,
-            content={"message": str(e)},
-        )
-    except httpx.HTTPStatusError as e:
-        # Upstream returned a non-2xx code; surface a helpful message
-        detail = e.response.text if e.response is not None else str(e)
-        return JSONResponse(
-            status_code=502,
-            content={"message": "Upstream AI provider error", "detail": detail},
-        )
-    except httpx.HTTPError as e:
-        # Network or protocol level errors
-        return JSONResponse(
-            status_code=502,
-            content={"message": "Network error when contacting AI provider", "detail": str(e)},
-        )
-    except Exception as e:
-        # Unexpected server error
-        return JSONResponse(
-            status_code=500,
-            content={"message": "Internal server error", "detail": str(e)},
-        )
+        q = (req.question or "").strip()
+        # Log incoming prompt length and a safe snippet (first 120 chars)
+        logger.info("Received /api/ask. Prompt length=%d snippet=%r", len(q), q[:120])
+
+        if not q:
+            # Log and raise a 400
+            logger.warning("Empty question received for /api/ask")
+            raise HTTPException(status_code=400, detail="Question must not be empty.")
+
+        # Placeholder logic; in real app this would call OpenAI and may raise
+        answer_text = f"You asked: {q}\n\nThis is a placeholder response from the backend."
+
+        return AskResponse(answer=answer_text, model=None)
+
+    except HTTPException as he:
+        # Log known http exceptions
+        logger.exception("HTTPException in /api/ask: %s (%s)", he.detail, type(he).__name__)
+        return JSONResponse(status_code=he.status_code, content={"message": "Bad request", "detail": he.detail})
+    except Exception as ex:
+        # Log unexpected exceptions with stack trace
+        logger.exception("Unhandled exception in /api/ask: %s (%s)", str(ex), type(ex).__name__)
+        return JSONResponse(status_code=500, content={"message": "Internal server error", "detail": str(ex)})
