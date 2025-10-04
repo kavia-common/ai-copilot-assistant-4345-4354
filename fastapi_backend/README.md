@@ -3,28 +3,43 @@
 This is the backend API server for the AI Copilot application. It exposes REST endpoints for health checks and asking questions, and integrates with the OpenAI API.
 
 ## Endpoints
-- GET / -> Health check
-- GET /api/health -> Health check (200 JSON: {"status":"ok"})
-- POST /api/ask -> Body: { "question": "string" }
+- GET / -> Health check (JSON like {"status":"ok"})
+- GET /api/health -> Health check (200 JSON indicating service is up)
+- POST /api/ask -> Body: { "question": "string" } returns { "answer": "...", "model": "..." }
 
 ## Environment
-- OPENAI_API_KEY: required for real responses (without it, /api/ask returns a 400-friendly error message)
+- OPENAI_API_KEY: required for real responses. Without it, /api/ask returns a 400 error with guidance.
 - OPENAI_BASE_URL: default https://api.openai.com/v1
 - OPENAI_MODEL: default gpt-4o-mini
 - FRONTEND_ORIGIN: default http://localhost:3000
 - BACKEND_PORT: default 3001
 
-Create a local environment file by copying `.env.example` to `.env` and filling in your values as needed.
+Create a local environment file by copying `.env.example` to `.env` and filling in your values as needed. Never expose OPENAI_API_KEY to the frontend.
 
 ## CORS
 For local development, CORS is configured to allow:
 - http://localhost:3000
 - http://127.0.0.1:3000
-- FRONTEND_ORIGIN (if provided)
-
-Credentials are disabled (allow_credentials: false) to avoid preflight/cookie constraints during local development.
+You can also set FRONTEND_ORIGIN to match your frontend origin. The middleware is configured with allow_methods and allow_headers set to "*", and credentials are enabled by default in code. If you change origins, restart the server.
 
 ## Run locally
-- Install dependencies: `pip install -r requirements.txt`
-- Start: `uvicorn src.api.main:app --host 0.0.0.0 --port ${BACKEND_PORT:-3001}`
-- Visit API docs: http://localhost:3001/docs
+- Install dependencies:
+  pip install -r requirements.txt
+- Start on the default port (3001):
+  uvicorn src.api.main:app --host 0.0.0.0 --port ${BACKEND_PORT:-3001}
+- Switch to port 8000 if preferred:
+  uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+- Visit API docs:
+  http://localhost:3001/docs (or http://localhost:8000/docs)
+
+## Health checks and verification
+- Health: GET http://localhost:3001/api/health should return a small JSON confirming the service is up. The root path / also returns a simple health JSON.
+- End-to-end: After starting the frontend at http://localhost:3000, submit a question from the UI. The frontend posts to ${REACT_APP_API_BASE}/api/ask and displays the answer or an informative error.
+
+## Error mapping
+- 400 Bad Request: empty question or configuration issues (e.g., missing OPENAI_API_KEY) with a clear message and action hint.
+- 502 Bad Gateway: upstream provider/network errors, including httpx HTTPStatusError/HTTPError, with hints to check model, key, quota, or connectivity.
+- 500 Internal Server Error: unexpected exceptions.
+
+## Logs
+- Server logs appear in the terminal where you run uvicorn. Requests to /api/ask log the prompt length and snippets. Exceptions are logged with stack traces when appropriate.

@@ -6,26 +6,6 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/api/health": {
-      "get": {
-        "tags": [
-          "qa"
-        ],
-        "summary": "Health check",
-        "description": "Simple health endpoint to verify the API is running.",
-        "operationId": "health_api_health_get",
-        "responses": {
-          "200": {
-            "description": "Service healthy",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/ask": {
       "post": {
         "tags": [
@@ -46,7 +26,7 @@
         },
         "responses": {
           "200": {
-            "description": "Answer successfully generated.",
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
@@ -54,15 +34,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "Bad request or missing configuration."
-          },
-          "502": {
-            "description": "Upstream AI provider error."
-          },
-          "500": {
-            "description": "Internal server error."
           },
           "422": {
             "description": "Validation Error",
@@ -85,6 +56,26 @@
         "summary": "Health Check",
         "description": "Basic health check of the service.",
         "operationId": "health_check__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "qa"
+        ],
+        "summary": "Health check",
+        "description": "Simple health endpoint to verify the API is running.",
+        "operationId": "api_health_api_health_get",
         "responses": {
           "200": {
             "description": "Successful Response",
