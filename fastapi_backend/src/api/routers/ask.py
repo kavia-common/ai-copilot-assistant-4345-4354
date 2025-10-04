@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 import httpx
 from ..pydantic_models import AskRequest, AskResponse
 from . import openai_client
@@ -24,15 +25,38 @@ async def health():
         500: {"description": "Internal server error."},
     },
 )
-async def ask(request: AskRequest) -> AskResponse:
-    """Accept a question and return an AI-generated answer."""
+async def ask(request: AskRequest):
+    """
+    Accept a question and return an AI-generated answer.
+
+    Returns:
+        AskResponse JSON on success. JSON error with 'message' on failures.
+    """
     try:
         answer, model = await openai_client.get_answer(request.question)
         return AskResponse(answer=answer, model=model)
     except ValueError as e:
-        # Typically missing OPENAI_API_KEY
-        raise HTTPException(status_code=400, detail=str(e))
+        # Typically missing OPENAI_API_KEY or invalid configuration
+        return JSONResponse(
+            status_code=400,
+            content={"message": str(e)},
+        )
+    except httpx.HTTPStatusError as e:
+        # Upstream returned a non-2xx code; surface a helpful message
+        detail = e.response.text if e.response is not None else str(e)
+        return JSONResponse(
+            status_code=502,
+            content={"message": "Upstream AI provider error", "detail": detail},
+        )
     except httpx.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"Upstream error: {str(e)}")
+        # Network or protocol level errors
+        return JSONResponse(
+            status_code=502,
+            content={"message": "Network error when contacting AI provider", "detail": str(e)},
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Unexpected server error
+        return JSONResponse(
+            status_code=500,
+            content={"message": "Internal server error", "detail": str(e)},
+        )

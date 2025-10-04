@@ -8,10 +8,10 @@ This is the backend API server for the AI Copilot application. It exposes REST e
 - POST /api/ask -> Body: { "question": "string" }
 
 ## Environment
-- OPENAI_API_KEY: required for real responses (without it, /api/ask returns a 400-friendly error)
+- OPENAI_API_KEY: required for real responses (without it, /api/ask returns a 400-friendly error message)
 - OPENAI_BASE_URL: default https://api.openai.com/v1
 - OPENAI_MODEL: default gpt-4o-mini
-- FRONTEND_ORIGIN: default http://localhost:3000
+- FRONTEND_ORIGIN: default http://localhost:3000 (backend always also allows http://localhost:3000 for local dev)
 - BACKEND_PORT: default 3001
 
 Create a local environment file by copying `.env.example` to `.env` and filling in your values as needed.

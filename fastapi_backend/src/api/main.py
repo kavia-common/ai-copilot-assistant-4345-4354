@@ -16,10 +16,14 @@ app = FastAPI(
     openapi_tags=openapi_tags,
 )
 
-# CORS configured for the configured frontend origin
+# Build allowed origins list, always include localhost:3000 for local dev.
+allowed_origins = {settings.FRONTEND_ORIGIN, "http://localhost:3000", "https://localhost:3000"}
+# Also allow the preview hostname domain pattern by deriving from configured origin if it's HTTPS custom host.
+# Note: Keep minimal to avoid over-permissive CORS; add more origins via FRONTEND_ORIGIN env when needed.
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_ORIGIN],
+    allow_origins=list(allowed_origins),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,7 +33,12 @@ app.add_middleware(
 app.include_router(ask.router)
 
 # Root path for basic health - documented under system
-@app.get("/", tags=["system"], summary="Health Check", description="Basic health check of the service.")
+@app.get(
+    "/",
+    tags=["system"],
+    summary="Health Check",
+    description="Basic health check of the service."
+)
 def health_check():
     """Return a simple health status payload."""
     return {"message": "Healthy"}
