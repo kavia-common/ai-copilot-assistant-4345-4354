@@ -7,9 +7,13 @@ from . import openai_client
 router = APIRouter(prefix="/api", tags=["qa"])
 
 # PUBLIC_INTERFACE
-@router.get("/health", summary="Health check", description="Simple health endpoint to verify the API is running.")
+@router.get(
+    "/health",
+    summary="Health check",
+    description="Simple health endpoint to verify the API is running.",
+    responses={200: {"description": "Service healthy"}})
 async def health():
-    """Return service health status."""
+    """Return service health status as JSON with HTTP 200."""
     return {"status": "ok"}
 
 # PUBLIC_INTERFACE

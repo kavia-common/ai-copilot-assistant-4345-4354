@@ -15,4 +15,4 @@ This workspace contains the FastAPI backend for the AI Copilot application. The 
 - Start server: `uvicorn fastapi_backend.src.api.main:app --host 0.0.0.0 --port 3001`
 - Open http://localhost:3001/docs
 
-The frontend will call http://localhost:3001/api/ask.
+The frontend will call http://localhost:3001/api/ask. Ensure the frontend base URL (REACT_APP_API_BASE) points to the same backend origin/port and that the frontend runs at http://localhost:3000 to match CORS configuration.

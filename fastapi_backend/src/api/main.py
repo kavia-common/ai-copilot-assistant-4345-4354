@@ -16,15 +16,19 @@ app = FastAPI(
     openapi_tags=openapi_tags,
 )
 
-# Build allowed origins list, always include localhost:3000 for local dev.
-allowed_origins = {settings.FRONTEND_ORIGIN, "http://localhost:3000", "https://localhost:3000"}
-# Also allow the preview hostname domain pattern by deriving from configured origin if it's HTTPS custom host.
-# Note: Keep minimal to avoid over-permissive CORS; add more origins via FRONTEND_ORIGIN env when needed.
+# Build allowed origins list, always include explicit localhost variants for local dev.
+# Explicitly avoid allow_credentials when using wildcard-ish patterns.
+allowed_origins = {
+    settings.FRONTEND_ORIGIN,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+}
+# Note: You can extend with additional preview hosts via FRONTEND_ORIGIN or by editing this list.
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(allowed_origins),
-    allow_credentials=True,
+    allow_credentials=False,  # WithCredentials disabled to avoid preflight+cookie constraints for local dev
     allow_methods=["*"],
     allow_headers=["*"],
 )
