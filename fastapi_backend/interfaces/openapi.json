@@ -1,13 +1,89 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "FastAPI",
+    "title": "AI Copilot Backend",
+    "description": "Backend API for an AI Copilot that answers user questions using OpenAI.",
     "version": "0.1.0"
   },
   "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "qa"
+        ],
+        "summary": "Health check",
+        "description": "Simple health endpoint to verify the API is running.",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ask": {
+      "post": {
+        "tags": [
+          "qa"
+        ],
+        "summary": "Ask a question",
+        "description": "Send a question to the AI model and get a generated answer.",
+        "operationId": "ask_api_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Answer successfully generated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request or missing configuration."
+          },
+          "502": {
+            "description": "Upstream AI provider error."
+          },
+          "500": {
+            "description": "Internal server error."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
+        "tags": [
+          "system"
+        ],
         "summary": "Health Check",
+        "description": "Basic health check of the service.",
         "operationId": "health_check__get",
         "responses": {
           "200": {
@@ -21,5 +97,107 @@
         }
       }
     }
-  }
+  },
+  "components": {
+    "schemas": {
+      "AskRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question",
+            "description": "The user's question to be answered by the AI."
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest",
+        "description": "Schema for questions sent from the frontend to the backend."
+      },
+      "AskResponse": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer",
+            "description": "The AI-generated answer for the given question."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "The model used to generate the answer, if available."
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer"
+        ],
+        "title": "AskResponse",
+        "description": "Schema for answers returned by the backend after calling the AI model."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "qa",
+      "description": "Ask questions and get AI-generated answers."
+    },
+    {
+      "name": "system",
+      "description": "System endpoints like health checks."
+    }
+  ]
 }
