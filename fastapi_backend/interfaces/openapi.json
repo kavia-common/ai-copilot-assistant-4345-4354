@@ -16,7 +16,7 @@
         "operationId": "health_api_health_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Service healthy",
             "content": {
               "application/json": {
                 "schema": {}
