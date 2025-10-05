@@ -1,6 +1,6 @@
 # FastAPI Backend for AI Copilot
 
-This is the backend API server for the AI Copilot application. It exposes REST endpoints for health checks and asking questions, and integrates with the OpenAI API.
+This is the backend API server for the AI Copilot application. It exposes REST endpoints for health checks and asking questions, and integrates with Google Gemini.
 
 ## Endpoints
 - GET / -> Health check (JSON like {"status":"ok"})
@@ -8,13 +8,12 @@ This is the backend API server for the AI Copilot application. It exposes REST e
 - POST /api/ask -> Body: { "question": "string" } returns { "answer": "...", "model": "..." }
 
 ## Environment
-- OPENAI_API_KEY: required for real responses. Without it, /api/ask returns a 400 error with guidance.
-- OPENAI_BASE_URL: default https://api.openai.com/v1
-- OPENAI_MODEL: default gpt-4o-mini
+- GOOGLE_GEMINI_API_KEY: required for real responses. Without it, /api/ask returns a 400 error with guidance.
+- GEMINI_MODEL: default gemini-1.5-pro
 - FRONTEND_ORIGIN: default http://localhost:3000
 - BACKEND_PORT: default 3001
 
-Create a local environment file by copying `.env.example` to `.env` and filling in your values as needed. Never expose OPENAI_API_KEY to the frontend.
+Create a local environment file by copying `.env.example` to `.env` and filling in your values as needed. Never expose GOOGLE_GEMINI_API_KEY to the frontend.
 
 ## CORS
 For local development, CORS is configured to allow:
@@ -37,8 +36,8 @@ You can also set FRONTEND_ORIGIN to match your frontend origin. The middleware i
 - End-to-end: After starting the frontend at http://localhost:3000, submit a question from the UI. The frontend posts to ${REACT_APP_API_BASE}/api/ask and displays the answer or an informative error.
 
 ## Error mapping
-- 400 Bad Request: empty question or configuration issues (e.g., missing OPENAI_API_KEY) with a clear message and action hint.
-- 502 Bad Gateway: upstream provider/network errors, including httpx HTTPStatusError/HTTPError, with hints to check model, key, quota, or connectivity.
+- 400 Bad Request: empty question or configuration issues (e.g., missing GOOGLE_GEMINI_API_KEY) with a clear message and action hint.
+- 502 Bad Gateway: upstream provider/network errors with hints to check model, key, quota, or connectivity.
 - 500 Internal Server Error: unexpected exceptions.
 
 ## Logs

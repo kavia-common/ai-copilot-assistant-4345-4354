@@ -2,10 +2,9 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-import httpx
 
 from ..pydantic_models import AskRequest, AskResponse
-from .openai_client import get_answer
+from .gemini_client import get_answer, GeminiConfigurationError, GeminiUpstreamError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -16,16 +15,16 @@ router = APIRouter()
     response_model=AskResponse,
     tags=["qa"],
     summary="Ask a question",
-    description="Send a question to the AI model and get a generated answer.",
+    description="Send a question to the AI model (Google Gemini) and get a generated answer.",
 )
 async def ask(req: AskRequest):
     """
     Handle the /api/ask endpoint.
 
     - Validates the question and returns 400 if empty.
-    - Calls the OpenAI client to generate an answer.
+    - Calls the Gemini client to generate an answer.
     - Maps errors to appropriate HTTP codes:
-        * 400: empty question or missing OPENAI_API_KEY
+        * 400: empty question or missing GOOGLE_GEMINI_API_KEY
         * 502: upstream provider/network errors
         * 500: unexpected exceptions
     """
@@ -37,7 +36,7 @@ async def ask(req: AskRequest):
             logger.warning("Empty question received for /api/ask")
             raise HTTPException(status_code=400, detail="Question must not be empty.")
 
-        # Call OpenAI via our client helper
+        # Call Gemini via our client helper
         answer_text, model_used = await get_answer(q)
         return AskResponse(answer=answer_text, model=model_used)
 
@@ -48,8 +47,8 @@ async def ask(req: AskRequest):
             status_code=he.status_code,
             content={"message": "Bad request", "detail": he.detail},
         )
-    except ValueError as ve:
-        # Typically configuration errors like missing OPENAI_API_KEY
+    except GeminiConfigurationError as ve:
+        # Typically configuration errors like missing GOOGLE_GEMINI_API_KEY
         detail_str = str(ve)
         logger.warning("Configuration error in /api/ask: %s", detail_str)
         return JSONResponse(
@@ -57,29 +56,17 @@ async def ask(req: AskRequest):
             content={
                 "message": "Configuration error",
                 "detail": detail_str,
-                "action": "Set OPENAI_API_KEY in backend environment and retry.",
+                "action": "Set GOOGLE_GEMINI_API_KEY in backend environment and retry.",
             },
         )
-    except httpx.HTTPStatusError as hse:
-        # Upstream responded with non-2xx
-        logger.error("Upstream HTTPStatusError in /api/ask: %s", str(hse), exc_info=True)
+    except GeminiUpstreamError as ge:
+        logger.error("Upstream provider error in /api/ask: %s", str(ge), exc_info=True)
         return JSONResponse(
             status_code=502,
             content={
                 "message": "Upstream AI provider error",
-                "detail": str(hse),
+                "detail": str(ge),
                 "hint": "Verify your model name, API key, and account quota.",
-            },
-        )
-    except httpx.HTTPError as he:
-        # Network or request issues
-        logger.error("Upstream HTTPError in /api/ask: %s", str(he), exc_info=True)
-        return JSONResponse(
-            status_code=502,
-            content={
-                "message": "Network error contacting AI provider",
-                "detail": str(he),
-                "hint": "Check network connectivity and provider base URL.",
             },
         )
     except Exception as ex:

@@ -12,7 +12,7 @@ def create_app():
 
     app = FastAPI(
         title="AI Copilot Backend",
-        description="Backend API for an AI Copilot that answers user questions using OpenAI.",
+        description="Backend API for an AI Copilot that answers user questions using Google Gemini.",
         version="0.1.0",
         openapi_tags=[
             {"name": "qa", "description": "Ask questions and get AI-generated answers."},

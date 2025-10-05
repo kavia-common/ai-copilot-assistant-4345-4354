@@ -3,6 +3,7 @@ uvicorn==0.34.0
 pydantic==2.11.3
 python-dotenv==1.1.0
 httpx==0.28.1
+google-generativeai>=0.7.0
 # additional dev/runtime tooling maintained from template
 annotated-types==0.7.0
 anyio==4.9.0
