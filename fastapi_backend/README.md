@@ -43,3 +43,12 @@ You can also set FRONTEND_ORIGIN to match your frontend origin. The middleware i
 
 ## Logs
 - Server logs appear in the terminal where you run uvicorn. Requests to /api/ask log the prompt length and snippets. Exceptions are logged with stack traces when appropriate.
+
+## Data and Persistence
+This backend does not include or require any database or persistence layer in the current scope. All AI interactions are stateless: the frontend sends the user’s question to this FastAPI service, which forwards the request to the configured AI provider and returns the answer in a single request-response cycle. No chat history, user accounts, or other data are stored by the backend.
+
+If future features require persistence (such as chat history, user profiles, or rate limiting), they will need:
+- A separate database to be provisioned and configured, and
+- Corresponding backend changes to manage data models, migrations, and storage access.
+
+Until such changes are implemented, deployments should not expect or configure any database for this service.
