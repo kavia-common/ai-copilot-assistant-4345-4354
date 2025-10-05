@@ -12,7 +12,7 @@
           "qa"
         ],
         "summary": "Ask a question",
-        "description": "Send a question to the AI model and get a generated answer.",
+        "description": "Send a question to the AI model (Google Gemini) and get a generated answer.",
         "operationId": "ask_api_ask_post",
         "requestBody": {
           "content": {
