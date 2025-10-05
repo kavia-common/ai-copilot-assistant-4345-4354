@@ -1,4 +1,4 @@
-# FastAPI Backend for AI Copilot
+# FastAPI Backend for AI Copilot (Google Gemini)
 
 This is the backend API server for the AI Copilot application. It exposes REST endpoints for health checks and asking questions, and integrates with Google Gemini.
 
@@ -9,8 +9,8 @@ This is the backend API server for the AI Copilot application. It exposes REST e
 
 ## Environment
 - GOOGLE_GEMINI_API_KEY: required for real responses. Without it, /api/ask returns a 400 error with guidance.
-- GEMINI_MODEL: default gemini-1.5-pro
-- FRONTEND_ORIGIN: default http://localhost:3000
+- GEMINI_MODEL: default "gemini-1.5-pro"
+- FRONTEND_ORIGIN: optional, default "http://localhost:3000" (added to CORS allowlist if set)
 - BACKEND_PORT: default 3001
 
 Create a local environment file by copying `.env.example` to `.env` and filling in your values as needed. Never expose GOOGLE_GEMINI_API_KEY to the frontend.
@@ -19,35 +19,42 @@ Create a local environment file by copying `.env.example` to `.env` and filling 
 For local development, CORS is configured to allow:
 - http://localhost:3000
 - http://127.0.0.1:3000
-You can also set FRONTEND_ORIGIN to match your frontend origin. The middleware is configured with allow_methods and allow_headers set to "*", and credentials are enabled by default in code. If you change origins, restart the server.
+If you set FRONTEND_ORIGIN, it is also allowed automatically. The middleware allows all methods and headers and enables credentials.
 
 ## Run locally
 - Install dependencies:
   pip install -r requirements.txt
 - Start on the default port (3001):
   uvicorn src.api.main:app --host 0.0.0.0 --port ${BACKEND_PORT:-3001}
-- Switch to port 8000 if preferred:
-  uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 - Visit API docs:
-  http://localhost:3001/docs (or http://localhost:8000/docs)
+  http://localhost:3001/docs
 
-## Health checks and verification
-- Health: GET http://localhost:3001/api/health should return a small JSON confirming the service is up. The root path / also returns a simple health JSON.
-- End-to-end: After starting the frontend at http://localhost:3000, submit a question from the UI. The frontend posts to ${REACT_APP_API_BASE}/api/ask and displays the answer or an informative error.
+## End-to-end run instructions
+- Backend:
+  - Set GOOGLE_GEMINI_API_KEY in `fastapi_backend/.env`. Optionally set GEMINI_MODEL.
+  - Start the backend on port 3001.
+- Frontend:
+  - Ensure REACT_APP_API_BASE is http://localhost:3001 (default).
+  - Start the frontend on port 3000.
+- Test health:
+  - GET http://localhost:3001/api/health should return {"ok": true}.
+- Test ask:
+  - POST http://localhost:3001/api/ask with {"question":"Hello"} should return {"answer":"...", "model":"..."}.
 
-## Error mapping
-- 400 Bad Request: empty question or configuration issues (e.g., missing GOOGLE_GEMINI_API_KEY) with a clear message and action hint.
-- 502 Bad Gateway: upstream provider/network errors with hints to check model, key, quota, or connectivity.
-- 500 Internal Server Error: unexpected exceptions.
+## Troubleshooting
+- 400 Bad Request:
+  - Empty question or missing GOOGLE_GEMINI_API_KEY. Add the key and restart.
+- 502 Bad Gateway:
+  - Upstream provider/network errors. Verify model, key, quota, network.
+- CORS errors:
+  - Ensure frontend runs on http://localhost:3000 or http://127.0.0.1:3000.
+  - If using a different origin, set FRONTEND_ORIGIN in backend .env and restart.
+- Connection issues from frontend:
+  - Confirm REACT_APP_API_BASE matches backend URL (http://localhost:3001).
+  - Restart the React dev server after changing env.
 
 ## Logs
-- Server logs appear in the terminal where you run uvicorn. Requests to /api/ask log the prompt length and snippets. Exceptions are logged with stack traces when appropriate.
+Server logs appear in the terminal where you run uvicorn. /api/ask logs prompt length and snippets. Exceptions are logged with stack traces when appropriate.
 
 ## Data and Persistence
-This backend does not include or require any database or persistence layer in the current scope. All AI interactions are stateless: the frontend sends the user’s question to this FastAPI service, which forwards the request to the configured AI provider and returns the answer in a single request-response cycle. No chat history, user accounts, or other data are stored by the backend.
-
-If future features require persistence (such as chat history, user profiles, or rate limiting), they will need:
-- A separate database to be provisioned and configured, and
-- Corresponding backend changes to manage data models, migrations, and storage access.
-
-Until such changes are implemented, deployments should not expect or configure any database for this service.
+No database included. Interactions are stateless: the frontend sends a question, backend calls Gemini, returns an answer.

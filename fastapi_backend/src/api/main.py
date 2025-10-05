@@ -2,6 +2,8 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .deps import settings
+
 # PUBLIC_INTERFACE
 def create_app():
     """Create and configure the FastAPI application with basic logging and CORS."""
@@ -20,15 +22,17 @@ def create_app():
         ],
     )
 
-    # CORS configuration - match README guidance
-    origins = [
+    # CORS configuration - defaults plus FRONTEND_ORIGIN if provided
+    origins = {
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-    ]
-    # Allow override via FRONTEND_ORIGIN env if middleware defined elsewhere; kept minimal here.
+    }
+    if settings.FRONTEND_ORIGIN:
+        origins.add(settings.FRONTEND_ORIGIN)
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
+        allow_origins=list(origins),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
