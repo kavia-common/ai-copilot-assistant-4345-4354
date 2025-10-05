@@ -1,6 +1,8 @@
 import logging
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .deps import settings
 
@@ -37,6 +39,52 @@ def create_app():
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Add request logging middleware for diagnostics
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        """Log all incoming requests and responses for diagnostics."""
+        start_time = time.time()
+        logger = logging.getLogger("uvicorn.access")
+        
+        # Log incoming request
+        logger.info(
+            "Incoming request: %s %s from %s (Origin: %s)",
+            request.method,
+            request.url.path,
+            request.client.host if request.client else "unknown",
+            request.headers.get("origin", "none"),
+        )
+        
+        try:
+            response = await call_next(request)
+            process_time = time.time() - start_time
+            logger.info(
+                "Request completed: %s %s -> %s (%.3fs)",
+                request.method,
+                request.url.path,
+                response.status_code,
+                process_time,
+            )
+            return response
+        except Exception as e:
+            process_time = time.time() - start_time
+            logger.error(
+                "Request failed: %s %s (%.3fs) - %s",
+                request.method,
+                request.url.path,
+                process_time,
+                str(e),
+                exc_info=True,
+            )
+            # Return JSON error response for unhandled exceptions
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "message": "Internal server error",
+                    "detail": "An unexpected error occurred while processing the request.",
+                },
+            )
 
     # Mount routers if they exist
     try:
